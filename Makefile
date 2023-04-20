@@ -8,6 +8,6 @@ format:
 	python3 -m black .
 
 lint:
-	python3 -m pylint --disable=R,C causal_inference
+	python3 -m pylint --disable=R,C,W0201 causal_inference
 test:
 	python3 -m pytest -vv --cov
