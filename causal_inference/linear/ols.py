@@ -189,11 +189,14 @@ class OLSEstimator(object):
             self._plot_result(data=data, effect=loc, ci=ci)
         return self._results
 
-    def _estimate_cate_from_sample(self, covariates: Dict[str, Any]) -> float:
+    def _estimate_cate_from_sample(
+        self, covariates: Dict[str, Any], random_state: int
+    ) -> float:
         """Method that returns CATE estimate for a sample.
 
         Args:
             covariates (Dict[str, Any]): Dictionary {covariate: value} for the individual for which we want to estimate CATE.
+            random_state (int): Seed to ensure reproducibility for the bootstrapping process.
 
         Raises:
             ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
@@ -210,6 +213,7 @@ class OLSEstimator(object):
             )
         covariates_values = covariates.copy()
         covariates_values[self._treatment] = 1
+        np.random.seed(random_state)
         cate = sum(
             np.random.uniform(*ci) * covariates_values[coeff_name]
             for coeff_name, ci in self._coeffs_interaction.items()
@@ -237,7 +241,8 @@ class OLSEstimator(object):
             )
         n_jobs = cpu_count() - 1
         cates = Parallel(n_jobs=n_jobs)(
-            delayed(self._estimate_cate_from_sample)(covariates) for _ in range(10_000)
+            delayed(self._estimate_cate_from_sample)(covariates, seed)
+            for seed in range(10_000)
         )
         return np.array(cates)
 
