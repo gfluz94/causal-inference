@@ -205,7 +205,7 @@ class OLSEstimator(object):
         if self._model is None:
             raise ModelNotFittedYet("Model needs to be fitted first!")
         if not self._heterogeneous:
-            raise CATECannotBeEstimatedForHomogeneousCase()(
+            raise CATECannotBeEstimatedForHomogeneousCase(
                 "`heterogeneous` set to False, so computing CATE is not allowed!"
             )
         covariates_values = covariates.copy()
@@ -232,7 +232,7 @@ class OLSEstimator(object):
         if self._model is None:
             raise ModelNotFittedYet("Model needs to be fitted first!")
         if not self._heterogeneous:
-            raise CATECannotBeEstimatedForHomogeneousCase()(
+            raise CATECannotBeEstimatedForHomogeneousCase(
                 "`heterogeneous` set to False, so computing CATE is not allowed!"
             )
         n_jobs = cpu_count() - 1
