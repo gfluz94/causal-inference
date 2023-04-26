@@ -6,6 +6,13 @@ from matplotlib import style
 import matplotlib.pyplot as plt
 import statsmodels.formula.api as smf
 
+from causal_inference._exceptions.ols import (
+    InvalidDataFormatForCovariates,
+    ModelNotFittedYet,
+    ATECannotBeEstimatedForHeterogeneousCase,
+    CATECannotBeEstimatedForHomogeneousCase,
+)
+
 
 class OLSEstimator(object):
 
@@ -34,7 +41,9 @@ class OLSEstimator(object):
             elif isinstance(covariates, list):
                 self._covariates = covariates
             else:
-                raise Exception
+                raise InvalidDataFormatForCovariates(
+                    "`covariates` must be either List[str] or str!"
+                )
 
         self._model = None
         self._results = None
@@ -82,7 +91,7 @@ class OLSEstimator(object):
 
     def _get_results(self) -> None:
         if self._model is None:
-            raise Exception
+            raise ModelNotFittedYet("Model needs to be fitted first!")
         ate = self._model.params[self._treatment]
         se = self._model.bse[self._treatment]
         lower_ci, upper_ci = self._model.conf_int().loc[self._treatment].values
@@ -96,7 +105,7 @@ class OLSEstimator(object):
 
     def _get_cis_for_heterogeneity(self) -> None:
         if self._model is None:
-            raise Exception
+            raise ModelNotFittedYet("Model needs to be fitted first!")
         self._coeffs_interaction = {}
         preffix = f"{self._treatment}:"
         for coeff_name in self._model.conf_int().index:
@@ -111,9 +120,11 @@ class OLSEstimator(object):
 
     def _estimate_ate(self, plot_result: bool = False) -> Dict[str, Any]:
         if self._model is None:
-            raise Exception
+            raise ModelNotFittedYet("Model needs to be fitted first!")
         if self._heterogeneous:
-            raise Exception
+            raise ATECannotBeEstimatedForHeterogeneousCase(
+                "`heterogeneous` set to True, so computing ATE is not allowed!"
+            )
         if plot_result:
             loc = self._results[self._ATE]
             scale = self._results[self._SE]
@@ -124,9 +135,11 @@ class OLSEstimator(object):
 
     def _estimate_cate_from_sample(self, covariates: Dict[str, Any]) -> float:
         if self._model is None:
-            raise Exception
+            raise ModelNotFittedYet("Model needs to be fitted first!")
         if not self._heterogeneous:
-            raise Exception
+            raise CATECannotBeEstimatedForHomogeneousCase()(
+                "`heterogeneous` set to False, so computing CATE is not allowed!"
+            )
         covariates_values = covariates.copy()
         covariates_values[self._treatment] = 1
         cate = sum(
@@ -137,9 +150,11 @@ class OLSEstimator(object):
 
     def _estimate_cate_bootstrap(self, covariates: Dict[str, Any]) -> np.ndarray:
         if self._model is None:
-            raise Exception
+            raise ModelNotFittedYet("Model needs to be fitted first!")
         if not self._heterogeneous:
-            raise Exception
+            raise CATECannotBeEstimatedForHomogeneousCase()(
+                "`heterogeneous` set to False, so computing CATE is not allowed!"
+            )
         n_jobs = cpu_count() - 1
         cates = Parallel(n_jobs=n_jobs)(
             delayed(self._estimate_cate_from_sample)(covariates) for _ in range(10_000)
