@@ -15,6 +15,22 @@ from causal_inference._exceptions.ols import (
 
 
 class OLSEstimator(object):
+    """Class that encapsulates the whole logic for estimating ATE and CATE with linear models.
+
+    Parameters:
+        data (pd.DataFrame): pandas dataframe containing treatment, outcome and covariates.
+        outcome (str): Name of column containing outcome data.
+        treatment (str): Name of column containing treatment data.
+        covariates (Union[str, List[str]], optional): Name(s) of column(s) containing covariates data. Defaults to None.
+        heterogeneous (bool, optional): Whether to compute ATE (False) or CATE (True). Defaults to False.
+
+    Raises:
+        InvalidDataFormatForCovariates: Exception raised when `covariates` are neither List[str] or str.
+        ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+        ATECannotBeEstimatedForHeterogeneousCase: Exception raised when user attempts to estimate ATE for heterogeneous setting.
+        CATECannotBeEstimatedForHomogeneousCase: Exception raised when user attempts to estimate CATE for homogeneous setting.
+
+    """
 
     _ATE = "ATE"
     _CATE = "CATE"
@@ -30,6 +46,18 @@ class OLSEstimator(object):
         covariates: Optional[Union[str, List[str]]] = None,
         heterogeneous: bool = False,
     ) -> None:
+        """Constructor method for OLSEstimator.
+
+        Args:
+            data (pd.DataFrame): pandas dataframe containing treatment, outcome and covariates.
+            outcome (str): Name of column containing outcome data.
+            treatment (str): Name of column containing treatment data.
+            covariates (Union[str, List[str]], optional): Name(s) of column(s) containing covariates data. Defaults to None.
+            heterogeneous (bool, optional): Whether to compute ATE (False) or CATE (True). Defaults to False.
+
+        Raises:
+            InvalidDataFormatForCovariates: Exception raised when `covariates` are neither List[str] or str
+        """
         self._data = data
         self._outcome = outcome
         self._treatment = treatment
@@ -51,25 +79,31 @@ class OLSEstimator(object):
 
     @property
     def raw_data(self) -> pd.DataFrame:
+        """(pd.DataFrame) pandas dataframe containing treatment, outcome and covariates"""
         return self._data
 
     @property
     def outcome(self) -> str:
+        """(str) Name of column containing outcome data"""
         return self._outcome
 
     @property
     def treatment(self) -> str:
+        """(str) Name of column containing treatment data"""
         return self._treatment
 
     @property
     def covariates(self) -> Union[str, List[str]]:
+        """(Union[str, List[str]]) Name(s) of column(s) containing covariates data"""
         return self._covariates
 
     @property
     def heterogeneous(self) -> bool:
+        """(bool) Whether to compute ATE (False) or CATE (True)"""
         return self._heterogeneous
 
     def fit(self) -> None:
+        """Method that fits the estimator on input dasta."""
         X = self._treatment
         if self._covariates:
             if self._heterogeneous:
@@ -90,6 +124,11 @@ class OLSEstimator(object):
             self.estimate_ate = self._estimate_ate
 
     def _get_results(self) -> None:
+        """Method that computes ATE along with confidence intervals for the estimates.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+        """
         if self._model is None:
             raise ModelNotFittedYet("Model needs to be fitted first!")
         ate = self._model.params[self._treatment]
@@ -104,6 +143,11 @@ class OLSEstimator(object):
         }
 
     def _get_cis_for_heterogeneity(self) -> None:
+        """Method that computes CATE along with confidence intervals for the estimates.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+        """
         if self._model is None:
             raise ModelNotFittedYet("Model needs to be fitted first!")
         self._coeffs_interaction = {}
@@ -119,6 +163,18 @@ class OLSEstimator(object):
         self._coeffs_interaction[self._treatment] = lower, upper
 
     def _estimate_ate(self, plot_result: bool = False) -> Dict[str, Any]:
+        """Method that returns ATE results along with the plot, optionally.
+
+        Args:
+            plot_result (bool, optional): Whether or not to display plot with results. Defaults to False.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+            ATECannotBeEstimatedForHeterogeneousCase: Exception raised when user attempts to estimate ATE for heterogeneous setting.
+
+        Returns:
+            Dict[str, Any]: Dictionary {variable: value} containing effect, standard error, confidence interval and p-value.
+        """
         if self._model is None:
             raise ModelNotFittedYet("Model needs to be fitted first!")
         if self._heterogeneous:
@@ -134,6 +190,18 @@ class OLSEstimator(object):
         return self._results
 
     def _estimate_cate_from_sample(self, covariates: Dict[str, Any]) -> float:
+        """Method that returns CATE estimate for a sample.
+
+        Args:
+            covariates (Dict[str, Any]): Dictionary {covariate: value} for the individual for which we want to estimate CATE.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+            CATECannotBeEstimatedForHomogeneousCase: Exception raised when user attempts to estimate CATE for homogeneous setting.
+
+        Returns:
+            float: Single estimate for CATE.
+        """
         if self._model is None:
             raise ModelNotFittedYet("Model needs to be fitted first!")
         if not self._heterogeneous:
@@ -149,6 +217,18 @@ class OLSEstimator(object):
         return cate
 
     def _estimate_cate_bootstrap(self, covariates: Dict[str, Any]) -> np.ndarray:
+        """Method that returns CATE estimates with bootstrapping.
+
+        Args:
+            covariates (Dict[str, Any]): Dictionary {covariate: value} for the individual for which we want to estimate CATE.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+            CATECannotBeEstimatedForHomogeneousCase: Exception raised when user attempts to estimate CATE for homogeneous setting.
+
+        Returns:
+            np.ndarray: Array containing 10,000 estimates for CATE with bootstrapping.
+        """
         if self._model is None:
             raise ModelNotFittedYet("Model needs to be fitted first!")
         if not self._heterogeneous:
@@ -164,6 +244,19 @@ class OLSEstimator(object):
     def _estimate_cate(
         self, covariates: Dict[str, Any], plot_result: bool = False
     ) -> Dict[str, Any]:
+        """Method that returns CATE results along with the plot, optionally.
+
+        Args:
+            covariates (Dict[str, Any]): Dictionary {covariate: value} for the individual for which we want to estimate CATE.
+            plot_result (bool, optional): Whether or not to display plot with results. Defaults to False.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+            CATECannotBeEstimatedForHomogeneousCase: Exception raised when user attempts to estimate CATE for homogeneous setting.
+
+        Returns:
+            Dict[str, Any]: Dictionary {variable: value} containing effect and confidence interval estimated with bootstrapping.
+        """
         cates = self._estimate_cate_bootstrap(covariates=covariates)
         cate = np.mean(cates)
         cate_ci = (
@@ -180,6 +273,13 @@ class OLSEstimator(object):
     def _plot_result(
         self, data: np.array, effect: float, ci: Tuple[float, float]
     ) -> None:
+        """Method that returns a plot with final effect estimate along with confidence interval.
+
+        Args:
+            data (np.array): Data points of estimates to plot distribution.
+            effect (float): Actual effect computed (mean).
+            ci (Tuple[float, float]): Confidence interval for the effect estimate.
+        """
         style.use("fivethirtyeight")
         lower, upper = ci
         _, ax = plt.subplots(1, 1, figsize=(6, 4))
