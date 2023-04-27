@@ -263,10 +263,10 @@ class OLSEstimator(object):
             Dict[str, Any]: Dictionary {variable: value} containing effect and confidence interval estimated with bootstrapping.
         """
         cates = self._estimate_cate_bootstrap(covariates=covariates)
-        cate = np.mean(cates)
+        cate = np.round(np.mean(cates), 5)
         cate_ci = (
-            np.quantile(cates, q=0.025),
-            np.quantile(cates, q=0.975),
+            np.round(np.quantile(cates, q=0.025), 5),
+            np.round(np.quantile(cates, q=0.975), 5),
         )
         if plot_result:
             self._plot_result(data=cates, effect=cate, ci=cate_ci)
