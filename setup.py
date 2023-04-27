@@ -20,11 +20,11 @@ setuptools.setup(
         )
     ),
     classifiers=[
-        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.11",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.9",
+    python_requires=">=3.11",
     install_requires=[
         package.strip()
         for package in open("requirements.txt", encoding="utf-8").readlines()
