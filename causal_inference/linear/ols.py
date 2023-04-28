@@ -1,3 +1,5 @@
+__all__ = ["OLSEstimator"]
+
 from typing import Any, Dict, List, Optional, Tuple, Union
 from joblib import delayed, Parallel, cpu_count
 import pandas as pd
