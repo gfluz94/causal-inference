@@ -138,10 +138,10 @@ class OLSEstimator(object):
         lower_ci, upper_ci = self._model.conf_int().loc[self._treatment].values
         p_value = self._model.pvalues[self._treatment]
         self._results = {
-            self._ATE: ate,
-            self._SE: se,
-            self._CI: (lower_ci, upper_ci),
-            self._PVALUE: p_value,
+            self._ATE: np.round(ate, 5),
+            self._SE: np.round(se, 5),
+            self._CI: (np.round(lower_ci, 5), np.round(upper_ci)),
+            self._PVALUE: np.round(p_value, 5),
         }
 
     def _get_cis_for_heterogeneity(self) -> None:
@@ -158,11 +158,13 @@ class OLSEstimator(object):
             if coeff_name.startswith(preffix):
                 lower, upper = self._model.conf_int().loc[coeff_name]
                 self._coeffs_interaction[coeff_name.replace(preffix, "")] = (
-                    lower,
-                    upper,
+                    np.round(lower, 5),
+                    np.round(upper, 5),
                 )
         lower, upper = self._model.conf_int().loc[self._treatment]
-        self._coeffs_interaction[self._treatment] = lower, upper
+        self._coeffs_interaction[self._treatment] = np.round(lower, 5), np.round(
+            upper, 5
+        )
 
     def _estimate_ate(self, plot_result: bool = False) -> Dict[str, Any]:
         """Method that returns ATE results along with the plot, optionally.
@@ -217,7 +219,7 @@ class OLSEstimator(object):
         covariates_values[self._treatment] = 1
         np.random.seed(random_state)
         cate = sum(
-            np.random.uniform(*ci) * covariates_values[coeff_name]
+            np.round(np.random.uniform(*ci) * covariates_values[coeff_name], 5)
             for coeff_name, ci in self._coeffs_interaction.items()
         )
         return cate
