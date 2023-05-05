@@ -14,6 +14,17 @@ from causal_inference._exceptions.iv import (
 
 
 def _check_input_validity(input_variable: Any) -> Optional[List[str]]:
+    """Auxiliary function that checks whether the input belongs to one of the allowed types.
+
+    Args:
+        input_variable (Any): The input variable - a parameter passed to the class.
+
+    Raises:
+        InvalidDataFormatForInputs: Raised when `input_variable` is neither a list nor a string.
+
+    Returns:
+        Optional[List[str]]: List of str.
+    """
     if isinstance(input_variable, str):
         return [input_variable]
     elif isinstance(input_variable, list) or input_variable is None:
@@ -23,6 +34,21 @@ def _check_input_validity(input_variable: Any) -> Optional[List[str]]:
 
 
 class IVEstimator(object):
+    """Class that encapsulates the whole logic for estimating ATE with instrumental variables.
+
+    Parameters:
+        data (pd.DataFrame): pandas dataframe containing treatment, outcome and covariates.
+        outcome (str): Name of column containing outcome data.
+        treatment (str): Name of column containing treatment data.
+        instruments (Union[str, List[str]]): Name(s) of column(s) containing intrument(s) data.
+        categorical_covariates (Optional[Union[str, List[str]]], optional): Name(s) of column(s) containing categorical covariates data. Defaults to None.
+        numerical_covariates (Optional[Union[str, List[str]]], optional): Name(s) of column(s) containing numerical covariates data. Defaults to None.
+
+    Raises:
+        ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+
+    """
+
     _ATE = "ATE"
     _SE = "SE"
     _CI = "CI"
@@ -37,6 +63,16 @@ class IVEstimator(object):
         categorical_covariates: Optional[Union[str, List[str]]] = None,
         numerical_covariates: Optional[Union[str, List[str]]] = None,
     ) -> None:
+        """Constructor method for IVEstimator.
+
+        Args:
+            data (pd.DataFrame): pandas dataframe containing treatment, outcome and covariates.
+            outcome (str): Name of column containing outcome data.
+            treatment (str): Name of column containing treatment data.
+            instruments (Union[str, List[str]]): Name(s) of column(s) containing intrument(s) data.
+            categorical_covariates (Optional[Union[str, List[str]]], optional): Name(s) of column(s) containing categorical covariates data. Defaults to None.
+            numerical_covariates (Optional[Union[str, List[str]]], optional): Name(s) of column(s) containing numerical covariates data. Defaults to None.
+        """
         self._data = data
         self._outcome = outcome
         self._treatment = treatment
@@ -48,6 +84,7 @@ class IVEstimator(object):
         self._results = None
 
     def fit(self) -> None:
+        """Method that fits the estimator on input data."""
         expression = ""
 
         # Writing formula for first stage
@@ -70,6 +107,11 @@ class IVEstimator(object):
         ).fit()
 
     def _get_results(self) -> Dict[str, Any]:
+        """Method that computes ATE along with confidence intervals for the estimates.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+        """
         if self._model is None:
             raise ModelNotFittedYet("Model needs to be fitted first!")
 
@@ -89,6 +131,17 @@ class IVEstimator(object):
         return self._results
 
     def estimate_ate(self, plot_result: bool = False) -> Dict[str, Any]:
+        """Method that returns ATE results along with the plot, optionally.
+
+        Args:
+            plot_result (bool, optional): Whether or not to display plot with results. Defaults to False.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+
+        Returns:
+            Dict[str, Any]: Dictionary {variable: value} containing effect, standard error, confidence interval and p-value.
+        """
         output = self._get_results()
         if plot_result:
             data = np.random.normal(
