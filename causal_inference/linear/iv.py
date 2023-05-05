@@ -122,10 +122,10 @@ class IVEstimator(object):
             p_value = self._model.pvalues[self._treatment]
 
             self._results = {
-                self._ATE: ate,
-                self._SE: se,
-                self._CI: (lower, upper),
-                self._PVALUE: p_value,
+                self._ATE: np.round(ate, 5),
+                self._SE: np.round(se, 5),
+                self._CI: (np.round(lower, 5), np.round(upper, 5)),
+                self._PVALUE: np.round(p_value, 5),
             }
 
         return self._results
