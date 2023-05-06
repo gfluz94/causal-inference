@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from matplotlib import style
 import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
@@ -87,10 +88,38 @@ class PropensityScoreModel(object):
             self._data[self._covariates], self._data[self._treatment]
         )
 
-    def predict(self, df: pd.DataFrame) -> np.ndarray:
+    def get_propensity_scores(self) -> np.ndarray:
         if self._pipeline is None:
             raise ModelNotFittedYet("Propensity Score Model needs to be fitted first!")
-        return self._pipeline.predict_proba(df)[:, 1]
+        return self._pipeline.predict_proba(self._data[self._covariates])[:, 1]
+
+    def plot_distributions(self) -> None:
+        score_column = "ps"
+        df = self._data.assign({score_column: self.get_propensity_scores()})
+
+        style.use("fivethirtyeight")
+        _, ax = plt.subplots(1, 1, figsize=(6, 4))
+        sns.histplot(
+            df.loc[df[self._treatment] == 1, score_column],
+            color="green",
+            alpha=0.3,
+            bins=20,
+            label="Treated",
+            fill=True,
+            ax=ax,
+        )
+        sns.histplot(
+            df.loc[df[self._treatment] == 0, score_column],
+            color="red",
+            alpha=0.3,
+            bins=20,
+            label="Untreated",
+            fill=True,
+            ax=ax,
+        )
+        plt.xlabel("Propensity Score")
+        plt.legend()
+        plt.show()
 
 
 class MatchingEstimator(object):
