@@ -77,8 +77,8 @@ class PropensityScoreModel(object):
         if self._pipeline is None:
             return Pipeline(
                 steps=[
-                    self._get_preprocessor(),
-                    LogisticRegression(C=self._regularization, random_state=99),
+                    ("preprocessor", self._get_preprocessor()),
+                    ("lr", LogisticRegression(C=self._regularization, random_state=99)),
                 ]
             )
         return self._pipeline
@@ -96,7 +96,7 @@ class PropensityScoreModel(object):
 
     def plot_distributions(self) -> None:
         score_column = "ps"
-        df = self._data.assign({score_column: self.get_propensity_scores()})
+        df = self._data.assign(**{score_column: self.get_propensity_scores()})
 
         style.use("fivethirtyeight")
         _, ax = plt.subplots(1, 1, figsize=(6, 4))
@@ -178,7 +178,7 @@ class MatchingEstimator(object):
         np.random.seed(99)
         ates = Parallel(n_jobs=cpu_count() - 1)(
             delayed(self._estimate_ate_for_sample)(
-                self._data.sample(frac=1.0, seed=seed)
+                self._data.sample(frac=1.0, replace=True, random_state=seed)
             )
             for seed in range(1_000)
         )
@@ -190,7 +190,7 @@ class MatchingEstimator(object):
 
         if self._results is None and not self._bootstrapped_ates:
             self._data = self._data.assign(
-                {
+                **{
                     self._PROPENSITY_SCORE: self._propensity_score_model.get_propensity_scores()
                 }
             )
