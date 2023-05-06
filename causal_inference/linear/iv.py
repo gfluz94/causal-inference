@@ -7,30 +7,11 @@ from matplotlib import style
 import matplotlib.pyplot as plt
 from linearmodels import IV2SLS
 
+from causal_inference.linear._utils import _check_input_validity
 from causal_inference._exceptions.iv import (
     InvalidDataFormatForInputs,
     ModelNotFittedYet,
 )
-
-
-def _check_input_validity(input_variable: Any) -> Optional[List[str]]:
-    """Auxiliary function that checks whether the input belongs to one of the allowed types.
-
-    Args:
-        input_variable (Any): The input variable - a parameter passed to the class.
-
-    Raises:
-        InvalidDataFormatForInputs: Raised when `input_variable` is neither a list nor a string.
-
-    Returns:
-        Optional[List[str]]: List of str.
-    """
-    if isinstance(input_variable, str):
-        return [input_variable]
-    elif isinstance(input_variable, list) or input_variable is None:
-        return input_variable
-    else:
-        raise InvalidDataFormatForInputs("Inputs must be either List[str] or str!")
 
 
 class IVEstimator(object):
@@ -76,9 +57,15 @@ class IVEstimator(object):
         self._data = data
         self._outcome = outcome
         self._treatment = treatment
-        self._instruments = _check_input_validity(instruments)
-        self._categorical_covariates = _check_input_validity(categorical_covariates)
-        self._numerical_covariates = _check_input_validity(numerical_covariates)
+        self._instruments = _check_input_validity(
+            instruments, InvalidDataFormatForInputs
+        )
+        self._categorical_covariates = _check_input_validity(
+            categorical_covariates, InvalidDataFormatForInputs
+        )
+        self._numerical_covariates = _check_input_validity(
+            numerical_covariates, InvalidDataFormatForInputs
+        )
 
         self._model = None
         self._results = None

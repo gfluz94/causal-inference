@@ -8,6 +8,7 @@ from matplotlib import style
 import matplotlib.pyplot as plt
 import statsmodels.formula.api as smf
 
+from causal_inference.linear._utils import _check_input_validity
 from causal_inference._exceptions.ols import (
     InvalidDataFormatForCovariates,
     ModelNotFittedYet,
@@ -65,15 +66,9 @@ class OLSEstimator(object):
         self._treatment = treatment
         self._covariates = []
         self._heterogeneous = heterogeneous
-        if covariates is not None:
-            if isinstance(covariates, str):
-                self._covariates = [covariates]
-            elif isinstance(covariates, list):
-                self._covariates = covariates
-            else:
-                raise InvalidDataFormatForCovariates(
-                    "`covariates` must be either List[str] or str!"
-                )
+        self._covariates = _check_input_validity(
+            covariates, InvalidDataFormatForCovariates
+        )
 
         self._model = None
         self._results = None
