@@ -124,6 +124,20 @@ class PropensityScoreModel(object):
 
 
 class MatchingEstimator(object):
+    """Class that encapsulates the whole logic for estimating ATE with Propensity Score Matching.
+
+    Parameters:
+        data (pd.DataFrame): pandas dataframe containing treatment, outcome and covariates.
+        outcome (str): Name of column containing outcome data.
+        treatment (str): Name of column containing treatment data.
+        categorical_covariates (Optional[Union[str, List[str]]], optional): Name(s) of column(s) containing categorical covariates data. Defaults to None.
+        numerical_covariates (Optional[Union[str, List[str]]], optional): Name(s) of column(s) containing numerical covariates data. Defaults to None.
+        logistic_regression_regularization (float, optional): Inverse of regularization strength. Defaults to 1.0.
+
+    Raises:
+        ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+
+    """
     _ATE = "ATE"
     _CI = "CI"
     _PROPENSITY_SCORE = "ps"
@@ -137,6 +151,19 @@ class MatchingEstimator(object):
         numerical_covariates: Optional[Union[str, List[str]]] = None,
         logistic_regression_regularization: float = 1.0,
     ) -> None:
+        """Constructor method for MatchingEstimator.
+
+        Args:
+            data (pd.DataFrame): pandas dataframe containing treatment, outcome and covariates.
+            outcome (str): Name of column containing outcome data.
+            treatment (str): Name of column containing treatment data.
+            categorical_covariates (Optional[Union[str, List[str]]], optional): Name(s) of column(s) containing categorical covariates data. Defaults to None.
+            numerical_covariates (Optional[Union[str, List[str]]], optional): Name(s) of column(s) containing numerical covariates data. Defaults to None.
+            logistic_regression_regularization (float, optional): Inverse of regularization strength. Defaults to 1.0.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+        """
         self._data = data
         self._outcome = outcome
         self._treatment = treatment
@@ -160,12 +187,28 @@ class MatchingEstimator(object):
         self._bootstrapped_ates = []
 
     def fit(self, check_distributions: bool = False) -> None:
+        """Method that fits the estimator on input data, with Propensity Score Matching.
+
+        Args:
+            check_distributions (bool, optional): Whether or not to plot propensity scores distributions. Defaults to False.
+        """
         self._propensity_score_model.fit()
         if check_distributions:
             self._propensity_score_model.plot_distributions()
         self._fitted = True
 
     def _estimate_ate_for_sample(self, data: pd.DataFrame) -> float:
+        """Method that returns ATE results for a sampled dataset.
+
+        Args:
+            data (pd.DataFrame): pandas dataframe containing treatment, outcome and covariates.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+
+        Returns:
+            float: Estimated ATE value.
+        """
         if not self._fitted:
             raise ModelNotFittedYet("Model needs to be fitted first!")
         return np.mean(
@@ -175,6 +218,12 @@ class MatchingEstimator(object):
         )
 
     def _estimate_ate_with_bootstrapping(self) -> np.ndarray:
+        """Method that estimates ATE 1,000 times using bootstrapping.
+        The main goal is to compute the confidence interval for ATE final estimate.
+
+        Returns:
+            np.ndarray: Array containing estimates of ATE.
+        """
         np.random.seed(99)
         ates = Parallel(n_jobs=cpu_count() - 1)(
             delayed(self._estimate_ate_for_sample)(
@@ -185,6 +234,11 @@ class MatchingEstimator(object):
         return np.array(ates)
 
     def _get_results(self) -> Dict[str, Any]:
+        """Method that computes ATE along with confidence intervals for the estimates.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+        """
         if not self._fitted:
             raise ModelNotFittedYet("Model needs to be fitted first!")
 
@@ -208,6 +262,17 @@ class MatchingEstimator(object):
         return self._results
 
     def estimate_ate(self, plot_result: bool = False) -> Dict[str, Any]:
+        """Method that returns ATE results along with the plot, optionally.
+
+        Args:
+            plot_result (bool, optional): Whether or not to display plot with results. Defaults to False.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+
+        Returns:
+            Dict[str, Any]: Dictionary {variable: value} containing effect, standard error, confidence interval and p-value.
+        """
         output = self._get_results()
         if plot_result:
             self._plot_result(
@@ -220,6 +285,13 @@ class MatchingEstimator(object):
     def _plot_result(
         self, data: np.array, effect: float, ci: Tuple[float, float]
     ) -> None:
+        """Method that returns a plot with final effect estimate along with confidence interval.
+
+        Args:
+            data (np.array): Data points of estimates to plot distribution.
+            effect (float): Actual effect computed (mean).
+            ci (Tuple[float, float]): Confidence interval for the effect estimate.
+        """
         style.use("fivethirtyeight")
         lower, upper = ci
         _, ax = plt.subplots(1, 1, figsize=(6, 4))
