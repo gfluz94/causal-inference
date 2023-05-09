@@ -21,6 +21,21 @@ from causal_inference._exceptions.matching import (
 
 
 class PropensityScoreModel(object):
+    """Class that encapsulates the whole logic for assigning propensity scores to individuals.
+
+    Parameters:
+        data (pd.DataFrame): pandas dataframe containing treatment, outcome and covariates.
+        treatment (str): Name of column containing treatment data.
+        regularization (float, optional): Inverse of regularization strength. Defaults to 1.0.
+        categorical_covariates (Optional[Union[str, List[str]]], optional): Name(s) of column(s) containing categorical covariates data. Defaults to None.
+        numerical_covariates (Optional[Union[str, List[str]]], optional): Name(s) of column(s) containing numerical covariates data. Defaults to None.
+
+    Raises:
+        NoCovariatesAvailable: Exception raised when no covariates are passed as arguments.
+        ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+
+    """
+
     def __init__(
         self,
         data: pd.DataFrame,
@@ -29,6 +44,19 @@ class PropensityScoreModel(object):
         categorical_covariates: Optional[Union[str, List[str]]] = None,
         numerical_covariates: Optional[Union[str, List[str]]] = None,
     ) -> None:
+        """Constructor method for PropensityScoreModel.
+
+        Args:
+            data (pd.DataFrame): pandas dataframe containing treatment, outcome and covariates.
+            treatment (str): Name of column containing treatment data.
+            regularization (float, optional): Inverse of regularization strength. Defaults to 1.0.
+            categorical_covariates (Optional[Union[str, List[str]]], optional): Name(s) of column(s) containing categorical covariates data. Defaults to None.
+            numerical_covariates (Optional[Union[str, List[str]]], optional): Name(s) of column(s) containing numerical covariates data. Defaults to None.
+
+        Raises:
+            NoCovariatesAvailable: Exception raised when no covariates are passed as arguments.
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+        """
         self._data = data
         self._treatment = treatment
         self._regularization = regularization
@@ -50,16 +78,31 @@ class PropensityScoreModel(object):
         self._pipeline = None
 
     def _get_scaler(self) -> Optional[StandardScaler]:
+        """Method that returns Scaler object, if numerical covariates available.
+
+        Returns:
+            Optional[StandardScaler]: Standard Scaler for numerical covariates.
+        """
         if self._numerical_covariates:
             return StandardScaler()
         return None
 
     def _get_ohe(self) -> Optional[OneHotEncoder]:
+        """Method that returns Categorical Encoder object, if categorical covariates available.
+
+        Returns:
+            Optional[OneHotEncoder]: One-Hot Encoder for categorical covariates.
+        """
         if self._categorical_covariates:
             return OneHotEncoder(drop="first", sparse_output=False)
         return None
 
     def _get_preprocessor(self) -> ColumnTransformer:
+        """Method that returns the whole preprocessing pipeline.
+
+        Returns:
+            ColumnTransformer: Preprocessing pipeline.
+        """
         scaler = self._get_scaler()
         ohe = self._get_ohe()
 
@@ -74,6 +117,11 @@ class PropensityScoreModel(object):
         )
 
     def _get_pipeline(self) -> Pipeline:
+        """Method that returns the whole pipeline: preprocessing + logistic regression.
+
+        Returns:
+            Pipeline: Whole model pipeline (preprocessing + logistic regression).
+        """
         if self._pipeline is None:
             return Pipeline(
                 steps=[
@@ -84,17 +132,29 @@ class PropensityScoreModel(object):
         return self._pipeline
 
     def fit(self) -> None:
+        """Method that fits the estimator on input data."""
         self._pipeline = self._get_pipeline()
         self._pipeline = self._pipeline.fit(
             self._data[self._covariates], self._data[self._treatment]
         )
 
     def get_propensity_scores(self) -> np.ndarray:
+        """Method that returns the computed propensity scores.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+
+        Returns:
+            np.ndarray: Array of propensity scores.
+        """
         if self._pipeline is None:
             raise ModelNotFittedYet("Propensity Score Model needs to be fitted first!")
         return self._pipeline.predict_proba(self._data[self._covariates])[:, 1]
 
     def plot_distributions(self) -> None:
+        """Method that plots the propensity scores distributions for both treated and untreated.
+        It is useful for determining whether it is a reasonable fit or not.
+        """
         score_column = "ps"
         df = self._data.assign(**{score_column: self.get_propensity_scores()})
 
@@ -138,6 +198,7 @@ class MatchingEstimator(object):
         ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
 
     """
+
     _ATE = "ATE"
     _CI = "CI"
     _PROPENSITY_SCORE = "ps"
