@@ -14,6 +14,19 @@ from causal_inference._exceptions.diff_in_diff import (
 
 
 class DiffInDiffEstimator(object):
+    """Class that encapsulates the whole logic for estimating treatment effect with Difference-In-Differences.
+
+    Parameters:
+        data (pd.DataFrame): pandas dataframe containing treatment, outcome and time dimension variable.
+        outcome (str): Name of column containing outcome data.
+        treatment (str): Name of column containing treatment data.
+        time_dimension (str): Name of column containing flag for periods before (0) and after (1).
+
+    Raises:
+        ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+
+    """
+
     _ATE = "ATE"
     _SE = "SE"
     _CI = "CI"
@@ -22,6 +35,17 @@ class DiffInDiffEstimator(object):
     def __init__(
         self, data: pd.DataFrame, outcome: str, treatment: str, time_dimension: str
     ) -> None:
+        """Constructor method for DiffInDiffEstimator.
+
+        Args:
+            data (pd.DataFrame): pandas dataframe containing treatment, outcome and time dimension variable.
+            outcome (str): Name of column containing outcome data.
+            treatment (str): Name of column containing treatment data.
+            time_dimension (str): Name of column containing flag for periods before (0) and after (1).
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+        """
         self._data = data
         self._outcome = outcome
         self._treatment = treatment
@@ -32,6 +56,11 @@ class DiffInDiffEstimator(object):
         self._results = None
 
     def fit(self, plot_intervention: bool = False) -> None:
+        """Method that fits the estimator on input data.
+
+        Args:
+            plot_intervention (bool, optional): Whether or not to plot the differences through time. Defaults to False.
+        """
         self._model = smf.ols(
             formula=f"{self._outcome} ~ {self._treatment}*{self._time_dimension}",
             data=self._data,
@@ -41,6 +70,11 @@ class DiffInDiffEstimator(object):
         self._fitted = True
 
     def _get_results(self) -> Dict[str, Any]:
+        """Method that computes ATE along with confidence intervals for the estimates.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+        """
         if not self._fitted:
             raise ModelNotFittedYet("Model needs to be fitted first!")
 
@@ -60,6 +94,17 @@ class DiffInDiffEstimator(object):
         return self._results
 
     def estimate_ate(self, plot_result: bool = False) -> Dict[str, Any]:
+        """Method that returns ATE results along with the plot, optionally.
+
+        Args:
+            plot_result (bool, optional): Whether or not to display plot with results. Defaults to False.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+
+        Returns:
+            Dict[str, Any]: Dictionary {variable: value} containing effect, standard error, confidence interval and p-value.
+        """
         output = self._get_results()
         if plot_result:
             np.random.seed(99)
@@ -73,6 +118,7 @@ class DiffInDiffEstimator(object):
         return output
 
     def _plot_with_counterfactual(self) -> None:
+        """Method that returns a plot for the outcome on time, categorized in treated and control groups."""
         control = "Control"
         treated = "Treated"
         style.use("fivethirtyeight")
@@ -117,6 +163,13 @@ class DiffInDiffEstimator(object):
     def _plot_result(
         self, data: np.array, effect: float, ci: Tuple[float, float]
     ) -> None:
+        """Method that returns a plot with final effect estimate along with confidence interval.
+
+        Args:
+            data (np.array): Data points of estimates to plot distribution.
+            effect (float): Actual effect computed (mean).
+            ci (Tuple[float, float]): Confidence interval for the effect estimate.
+        """
         style.use("fivethirtyeight")
         lower, upper = ci
         _, ax = plt.subplots(1, 1, figsize=(6, 4))
