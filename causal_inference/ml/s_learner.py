@@ -1,4 +1,7 @@
+__all__ = ["SLearner"]
+
 from typing import List, Tuple, Union
+import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from lightgbm import LGBMRegressor
@@ -37,9 +40,11 @@ class SLearner(object):
         )
 
     def fit(self) -> None:
+        np.random.seed(self._seed)
         self._model = LGBMRegressor(
             max_depth=self._max_depth,
             min_child_samples=self._min_child_samples,
+            random_state=self._seed,
         )
         train, _ = self._split_data()
 
