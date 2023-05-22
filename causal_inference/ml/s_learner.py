@@ -8,7 +8,10 @@ from lightgbm import LGBMRegressor
 
 from causal_inference.ml.evaluation import CumulativeGainEvaluator
 from causal_inference.ml._utils import _check_input_validity
-from causal_inference._exceptions.ml import InvalidDataFormatForInputs, ModelNotFittedYet
+from causal_inference._exceptions.ml import (
+    InvalidDataFormatForInputs,
+    ModelNotFittedYet,
+)
 
 
 class SLearner(object):
@@ -26,7 +29,9 @@ class SLearner(object):
         self._data = data
         self._outcome = outcome
         self._treatment = treatment
-        self._covariates = _check_input_validity(covariates, exception=InvalidDataFormatForInputs)
+        self._covariates = _check_input_validity(
+            covariates, exception=InvalidDataFormatForInputs
+        )
         self._max_depth = max_depth
         self._min_child_samples = min_child_samples
         self._test_size = test_size
@@ -56,10 +61,10 @@ class SLearner(object):
         if self._model is None:
             raise ModelNotFittedYet("Model needs to be fitted first!")
         return df.assign(
-                cate=(
-                    self._model.predict(df.assign(**{self._treatment: 1.0}))
-                    - self._model.predict(df.assign(**{self._treatment: 0.0}))
-                )
+            cate=(
+                self._model.predict(df.assign(**{self._treatment: 1.0}))
+                - self._model.predict(df.assign(**{self._treatment: 0.0}))
+            )
         )
 
     def predict_train(self) -> pd.DataFrame:
