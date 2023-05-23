@@ -57,23 +57,20 @@ class SLearner(object):
             train[self._covariates + [self._treatment]], train[self._outcome]
         )
 
-    def _predict(self, df: pd.DataFrame) -> pd.DataFrame:
+    def predict(self, df: pd.DataFrame) -> pd.DataFrame:
         if self._model is None:
             raise ModelNotFittedYet("Model needs to be fitted first!")
-        return df.assign(
-            cate=(
-                self._model.predict(df.assign(**{self._treatment: 1.0}))
-                - self._model.predict(df.assign(**{self._treatment: 0.0}))
-            )
-        )
+        return self._model.predict(
+            df[self._covariates].assign(**{self._treatment: 1.0})
+        ) - self._model.predict(df[self._covariates].assign(**{self._treatment: 0.0}))
 
     def predict_train(self) -> pd.DataFrame:
         train, _ = self._split_data()
-        return self._predict(train)
+        return self.predict(train)
 
     def predict_test(self) -> pd.DataFrame:
         _, test = self._split_data()
-        return self._predict(test)
+        return self.predict(test)
 
     def eval(self) -> None:
         if self._model is None:
@@ -82,7 +79,7 @@ class SLearner(object):
         evaluator = CumulativeGainEvaluator(
             train=train,
             test=test,
-            model=self._model,
+            model=self,
             outcome=self._outcome,
             treatment=self._treatment,
             covariates=self._covariates,

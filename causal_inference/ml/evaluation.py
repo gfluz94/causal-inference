@@ -45,18 +45,7 @@ class CumulativeGainEvaluator(object):
         return self._test
 
     def _compute_cate(self, df: pd.DataFrame) -> pd.DataFrame:
-        return df.assign(
-            **{
-                self._CATE: (
-                    self._model.predict(
-                        df[self._covariates].assign(**{self._treatment: 1})
-                    )
-                    - self._model.predict(
-                        df[self._covariates].assign(**{self._treatment: 0})
-                    )
-                )
-            }
-        )
+        return df.assign(**{self._CATE: self._model.predict(df)})
 
     def _sort_by_cate(self, df: pd.DataFrame) -> pd.DataFrame:
         return df.sort_values(by=self._CATE, ascending=False)
