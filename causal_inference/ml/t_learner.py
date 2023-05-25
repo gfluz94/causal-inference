@@ -94,7 +94,7 @@ class TLearner(object):
             outcome=self._outcome,
             treatment=self._treatment,
             covariates=self._covariates,
-            model_name="S-Learner",
+            model_name="T-Learner",
         )
         evaluator.fit()
         evaluator.eval()
