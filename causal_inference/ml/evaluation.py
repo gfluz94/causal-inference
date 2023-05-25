@@ -98,8 +98,12 @@ class CumulativeGainEvaluator(object):
             self._test[self._X_LABEL], self._test[self._CUMULATIVE_GAIN], label="test"
         )
         ax.plot(
-            self._test[self._X_LABEL].values[[1, -1]],
-            self._test[self._CUMULATIVE_GAIN].values[[1, -1]],
+            self._test.loc[
+                ~self._test[self._CUMULATIVE_GAIN].isnull(), self._X_LABEL
+            ].values[[0, -1]],
+            self._test.loc[
+                ~self._test[self._CUMULATIVE_GAIN].isnull(), self._CUMULATIVE_GAIN
+            ].values[[0, -1]],
             linestyle="--",
             color="grey",
             linewidth=2,
