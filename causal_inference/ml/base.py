@@ -6,7 +6,6 @@ from sklearn.model_selection import train_test_split
 
 
 class MetaLearner(ABC):
-
     def __init__(
         self,
         data: pd.DataFrame,
@@ -36,7 +35,7 @@ class MetaLearner(ABC):
         return train_test_split(
             self._data, test_size=self._test_size, random_state=self._seed
         )
-    
+
     @abstractmethod
     def fit(self) -> None:
         """Method that fits the estimator on the training set of the input data."""
@@ -54,7 +53,7 @@ class MetaLearner(ABC):
         Returns:
             np.ndarray: Numpy array containing CATE predictions.
         """
-    
+
     def predict_train(self) -> np.ndarray:
         """Method that predicts CATE for the training set of input data.
 
