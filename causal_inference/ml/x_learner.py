@@ -19,6 +19,23 @@ from causal_inference._exceptions.ml import (
 
 
 class XLearner(MetaLearner):
+    """Class for X-Learner. It estimates CATE by fitting four separate models, according to treatment, and using matching.
+
+    Parameters:
+        data (pd.DataFrame): pandas dataframe containing treatment, outcome and covariates.
+        outcome (str): Name of column containing outcome data.
+        treatment (str): Name of column containing treatment data.
+        covariates_categorical (Union[str, List[str]], optional): Name(s) of column(s) containing categorical covariates data. Defaults to None.
+        covariates_numerical (Union[str, List[str]], optional): Name(s) of column(s) containing numerical covariates data. Defaults to None.
+        max_depth (int, optional): Maximum depth of LGBM Regressor trees. Defaults to 3.
+        min_child_samples (int, optional): Minimum childs to split further in maximum depth of LGBM Regressor trees. Defaults to 30.
+        test_size (float, optional): Test size for in-sample hold-out validation. Defaults to 0.30.
+        seed (int, optional): Random seed for reproducibility. Defaults to 99.
+
+    Raises:
+        ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+    """
+
     def __init__(
         self,
         data: pd.DataFrame,
@@ -31,6 +48,23 @@ class XLearner(MetaLearner):
         test_size: float = 0.30,
         seed: int = 99,
     ) -> None:
+        """Constructor method for XLearner.
+
+        Args:
+            data (pd.DataFrame): pandas dataframe containing treatment, outcome and covariates.
+            outcome (str): Name of column containing outcome data.
+            treatment (str): Name of column containing treatment data.
+            covariates_categorical (Union[str, List[str]], optional): Name(s) of column(s) containing categorical covariates data. Defaults to None.
+            covariates_numerical (Union[str, List[str]], optional): Name(s) of column(s) containing numerical covariates data. Defaults to None.
+            max_depth (int, optional): Maximum depth of LGBM Regressor trees. Defaults to 3.
+            min_child_samples (int, optional): Minimum childs to split further in maximum depth of LGBM Regressor trees. Defaults to 30.
+            test_size (float, optional): Test size for in-sample hold-out validation. Defaults to 0.30.
+            seed (int, optional): Random seed for reproducibility. Defaults to 99.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+            InvalidDataFormatForInputs: Exception raised when inputs are neither List[str] or str.
+        """
         super(XLearner, self).__init__(data=data, test_size=test_size, seed=seed)
         self._outcome = outcome
         self._treatment = treatment
@@ -57,6 +91,7 @@ class XLearner(MetaLearner):
         self._model_ps = None
 
     def fit(self) -> None:
+        """Method that fits the estimator on the training set of the input data."""
         # Models
         np.random.seed(self._seed)
         self._model_T0 = LGBMRegressor(
@@ -133,6 +168,17 @@ class XLearner(MetaLearner):
         self._model_ps.fit(train[self._covariates], train[self._treatment])
 
     def predict(self, df: pd.DataFrame) -> np.ndarray:
+        """Method that predicts CATE for an input dataframe.
+
+        Args:
+            df (pd.DataFrame): Pandas dataframe containing covariates and treatment.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+
+        Returns:
+            np.ndarray: Numpy array containing CATE predictions.
+        """
         if (
             self._model_T0 is None
             or self._model_T1 is None
@@ -150,6 +196,11 @@ class XLearner(MetaLearner):
         )
 
     def eval(self) -> None:
+        """Method that runs evaluation with Cumulative Gain Curve.
+
+        Raises:
+            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+        """
         if (
             self._model_T0 is None
             or self._model_T1 is None

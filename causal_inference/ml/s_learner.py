@@ -56,6 +56,7 @@ class SLearner(MetaLearner):
 
         Raises:
             ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
+            InvalidDataFormatForInputs: Exception raised when inputs are neither List[str] or str.
         """
         super(SLearner, self).__init__(data=data, test_size=test_size, seed=seed)
         self._outcome = outcome
