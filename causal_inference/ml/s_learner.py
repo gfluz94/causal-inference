@@ -1,11 +1,11 @@
 __all__ = ["SLearner"]
 
-from typing import List, Tuple, Union
+from typing import List, Union
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from lightgbm import LGBMRegressor
 
+from causal_inference.ml.base import MetaLearner
 from causal_inference.ml.evaluation import CumulativeGainEvaluator
 from causal_inference.ml._utils import _check_input_validity
 from causal_inference._exceptions.ml import (
@@ -14,7 +14,7 @@ from causal_inference._exceptions.ml import (
 )
 
 
-class SLearner(object):
+class SLearner(MetaLearner):
     """Class for S-Learner (aka Go-Horse Learner). It estimates CATE by artificially setting treatment levels and subtracting predictions.
 
     Parameters:
@@ -57,7 +57,7 @@ class SLearner(object):
         Raises:
             ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
         """
-        self._data = data
+        super(SLearner, self).__init__(data=data, test_size=test_size, seed=seed)
         self._outcome = outcome
         self._treatment = treatment
         self._covariates = _check_input_validity(
@@ -65,20 +65,8 @@ class SLearner(object):
         )
         self._max_depth = max_depth
         self._min_child_samples = min_child_samples
-        self._test_size = test_size
-        self._seed = seed
 
         self._model = None
-
-    def _split_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """Method that splits the dataset into training and test sets.
-
-        Returns:
-            Tuple[pd.DataFrame, pd.DataFrame]: Training and test sets, respectively.
-        """
-        return train_test_split(
-            self._data, test_size=self._test_size, random_state=self._seed
-        )
 
     def fit(self) -> None:
         """Method that fits the estimator on the training set of the input data."""
@@ -111,30 +99,6 @@ class SLearner(object):
         return self._model.predict(
             df[self._covariates].assign(**{self._treatment: 1.0})
         ) - self._model.predict(df[self._covariates].assign(**{self._treatment: 0.0}))
-
-    def predict_train(self) -> np.ndarray:
-        """Method that predicts CATE for the training set of input data.
-
-        Raises:
-            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
-
-        Returns:
-            np.ndarray: Numpy array containing CATE predictions.
-        """
-        train, _ = self._split_data()
-        return self.predict(train)
-
-    def predict_test(self) -> pd.DataFrame:
-        """Method that predicts CATE for the test set of input data.
-
-        Raises:
-            ModelNotFittedYet: Exception raised when results are requested, but model has not been fitted yet.
-
-        Returns:
-            np.ndarray: Numpy array containing CATE predictions.
-        """
-        _, test = self._split_data()
-        return self.predict(test)
 
     def eval(self) -> None:
         """Method that runs evaluation with Cumulative Gain Curve.

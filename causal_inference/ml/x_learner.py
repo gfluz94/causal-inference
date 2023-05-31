@@ -1,15 +1,15 @@
 __all__ = ["XLearner"]
 
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Union
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.linear_model import LogisticRegression
 from lightgbm import LGBMRegressor
 
+from causal_inference.ml.base import MetaLearner
 from causal_inference.ml.evaluation import CumulativeGainEvaluator
 from causal_inference.linear._utils import _check_input_validity
 from causal_inference._exceptions.ml import (
@@ -18,7 +18,7 @@ from causal_inference._exceptions.ml import (
 )
 
 
-class XLearner(object):
+class XLearner(MetaLearner):
     def __init__(
         self,
         data: pd.DataFrame,
@@ -31,7 +31,7 @@ class XLearner(object):
         test_size: float = 0.30,
         seed: int = 99,
     ) -> None:
-        self._data = data
+        super(XLearner, self).__init__(data=data, test_size=test_size, seed=seed)
         self._outcome = outcome
         self._treatment = treatment
         covariates_categorical = _check_input_validity(
@@ -49,19 +49,12 @@ class XLearner(object):
         self._covariates = covariates_numerical + covariates_categorical
         self._max_depth = max_depth
         self._min_child_samples = min_child_samples
-        self._test_size = test_size
-        self._seed = seed
 
         self._model_T0 = None
         self._model_T1 = None
         self._model_tau0 = None
         self._model_tau1 = None
         self._model_ps = None
-
-    def _split_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        return train_test_split(
-            self._data, test_size=self._test_size, random_state=self._seed
-        )
 
     def fit(self) -> None:
         # Models
@@ -139,7 +132,7 @@ class XLearner(object):
         # 4th Stage
         self._model_ps.fit(train[self._covariates], train[self._treatment])
 
-    def predict(self, df: pd.DataFrame) -> pd.DataFrame:
+    def predict(self, df: pd.DataFrame) -> np.ndarray:
         if (
             self._model_T0 is None
             or self._model_T1 is None
@@ -155,14 +148,6 @@ class XLearner(object):
         ) * self._model_tau1.predict(
             df[self._covariates]
         )
-
-    def predict_train(self) -> pd.DataFrame:
-        train, _ = self._split_data()
-        return self.predict(train)
-
-    def predict_test(self) -> pd.DataFrame:
-        _, test = self._split_data()
-        return self.predict(test)
 
     def eval(self) -> None:
         if (
