@@ -1,6 +1,6 @@
 __all__ = ["TLearner"]
 
-from typing import List, Union
+from typing import List, Optional, Union
 import numpy as np
 import pandas as pd
 from lightgbm import LGBMRegressor
@@ -38,7 +38,7 @@ class TLearner(MetaLearner):
         treatment: str,
         covariates: Union[str, List[str]],
         max_depth: int = 3,
-        min_child_samples: int = 30,
+        min_child_samples: Optional[int] = None,
         test_size: float = 0.30,
         seed: int = 99,
     ) -> None:
@@ -50,7 +50,7 @@ class TLearner(MetaLearner):
             treatment (str): Name of column containing treatment data.
             covariates (Union[str, List[str]], optional): Name(s) of column(s) containing covariates data. Defaults to None.
             max_depth (int, optional): Maximum depth of LGBM Regressor trees. Defaults to 3.
-            min_child_samples (int, optional): Minimum childs to split further in maximum depth of LGBM Regressor trees. Defaults to 30.
+            min_child_samples (int, optional): Minimum childs to split further in maximum depth of LGBM Regressor trees. Defaults to None.
             test_size (float, optional): Test size for in-sample hold-out validation. Defaults to 0.30.
             seed (int, optional): Random seed for reproducibility. Defaults to 99.
 

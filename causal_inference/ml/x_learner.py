@@ -44,7 +44,7 @@ class XLearner(MetaLearner):
         covariates_categorical: Optional[Union[str, List[str]]] = None,
         covariates_numerical: Optional[Union[str, List[str]]] = None,
         max_depth: int = 3,
-        min_child_samples: int = 30,
+        min_child_samples: Optional[int] = None,
         test_size: float = 0.30,
         seed: int = 99,
     ) -> None:
@@ -57,7 +57,7 @@ class XLearner(MetaLearner):
             covariates_categorical (Union[str, List[str]], optional): Name(s) of column(s) containing categorical covariates data. Defaults to None.
             covariates_numerical (Union[str, List[str]], optional): Name(s) of column(s) containing numerical covariates data. Defaults to None.
             max_depth (int, optional): Maximum depth of LGBM Regressor trees. Defaults to 3.
-            min_child_samples (int, optional): Minimum childs to split further in maximum depth of LGBM Regressor trees. Defaults to 30.
+            min_child_samples (int, optional): Minimum childs to split further in maximum depth of LGBM Regressor trees. Defaults to None.
             test_size (float, optional): Test size for in-sample hold-out validation. Defaults to 0.30.
             seed (int, optional): Random seed for reproducibility. Defaults to 99.
 
