@@ -216,7 +216,6 @@ class TestSLearner:
         )
         model.fit()
         predictions = model.predict_test()
-        print(predictions.tolist())
 
         # EXPECTED
         expected_predictions = np.array(
